@@ -1,0 +1,144 @@
+version: "3.9"
+
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentshield_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agentshield}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-agentshield}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentshield_net
+
+  # ----------------------------------------------------------------------------
+  # Redis Message Broker & Cache Service
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: agentshield_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentshield_net
+
+  # ----------------------------------------------------------------------------
+  # Database Migration Service (Runs once on startup before web & worker)
+  # ----------------------------------------------------------------------------
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentshield_migration
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agentshield}
+      - SECRET_KEY=${SECRET_KEY:-replace-with-a-very-long-and-secure-random-secret-key-32-chars-min}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dGhpcy1pcy1hLXNhbXBsZS1mZXJuZXQta2V5LTMyeWVhcm9sZD0=}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentshield_net
+
+  # ----------------------------------------------------------------------------
+  # Web API Service (FastAPI)
+  # ----------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentshield_web
+    restart: unless-stopped
+    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_NAME=AgentShield AI
+      - APP_VERSION=1.0.0
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agentshield}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-replace-with-a-very-long-and-secure-random-secret-key-32-chars-min}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dGhpcy1pcy1hLXNhbXBsZS1mZXJuZXQta2V5LTMyeWVhcm9sZD0=}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PROMETHEUS_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    networks:
+      - agentshield_net
+
+  # ----------------------------------------------------------------------------
+  # Celery Background Worker
+  # ----------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentshield_worker
+    restart: unless-stopped
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agentshield}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-replace-with-a-very-long-and-secure-random-secret-key-32-chars-min}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dGhpcy1pcy1hLXNhbXBsZS1mZXJuZXQta2V5LTMyeWVhcm9sZD0=}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    networks:
+      - agentshield_net
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  agentshield_net:
+    driver: bridge
+
