@@ -11,6 +11,7 @@ router = APIRouter()
 
 
 @router.post("/evaluate", response_model=EvaluationResultSchema)
+@router.post("/evaluations/evaluate", response_model=EvaluationResultSchema)
 def evaluate_response(eval_req: EvaluationRequest):
     """
     Perform ad-hoc evaluation of an AI response using exact match,
