@@ -1,0 +1,27 @@
+{
+  "task": "prompt_injection_detection",
+  "labels": {
+    "0": "SAFE",
+    "1": "MALICIOUS"
+  },
+  "model_version": "0.1.0",
+  "selected_model": "tfidf_lr",
+  "created_utc": "2026-11-05T13:20:34+00:00",
+  "seed": 42,
+  "models": {
+    "tfidf_lr": {
+      "file": "baseline_tfidf_lr.joblib",
+      "threshold": 0.14150592293851602
+    }
+  },
+  "score_semantics": "malicious_score is a model ranking score compared against `threshold`; it is NOT a calibrated probability of malicious intent.",
+  "trained_on_sources": [
+    "bipia"
+  ],
+  "stand_alone_prompt_sources_used": false,
+  "production_ready": false,
+  "warnings": [
+    "Trained on BIPIA (indirect injection in emails/tables/code) ONLY. It has never seen stand-alone user prompts, jailbreaks or system-prompt extraction attempts. Do not use as a sole security control."
+  ],
+  "test_metrics_ref": "reports/evaluation/metrics.json"
+}

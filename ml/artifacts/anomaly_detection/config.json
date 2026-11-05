@@ -1,0 +1,30 @@
+{
+  "features": [
+    "latency_ms",
+    "prompt_tokens",
+    "completion_tokens",
+    "completion_prompt_ratio",
+    "tool_call_count",
+    "unauthorized_tool_count"
+  ],
+  "model_version": "0.1.0",
+  "isolation_forest_params": {
+    "n_estimators": 100,
+    "max_samples": 0.5,
+    "contamination": 0.02
+  },
+  "data_origin": "synthetic",
+  "production_ready": false,
+  "score_semantics": "score = -decision_function (higher = more unusual). Unusual != malicious.",
+  "excluded_prd_features": [
+    "retry_count",
+    "request_frequency",
+    "error_count",
+    "failed_tool_calls"
+  ],
+  "excluded_reason": "not collected by the current backend (see the notes in section 08)",
+  "warnings": [
+    "Trained on SYNTHETIC telemetry; retrain on real AgentShield telemetry before relying on it."
+  ],
+  "created_utc": "2026-11-05T13:20:34+00:00"
+}

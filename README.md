@@ -36,6 +36,15 @@ It operates as an **independent evaluation harness** that connects to external A
   - [9. Performance & Cost Monitoring](#9-performance--cost-monitoring)
   - [10. Evaluation Reports & CSV Export](#10-evaluation-reports--csv-export)
   - [11. Health & Prometheus Probes](#11-health--prometheus-probes)
+- [Machine Learning Subsystem (AgentShield ML)](#-machine-learning-subsystem-agentshield-ml)
+  - [Run Status & Environment](#run-status--environment)
+  - [Data Sources & Governance](#data-sources--governance)
+  - [Prompt-Injection Detection Benchmark](#prompt-injection-detection-benchmark)
+  - [Telemetry Anomaly Detection Benchmark](#telemetry-anomaly-detection-benchmark)
+  - [Semantic Similarity Pipeline](#semantic-similarity-pipeline)
+  - [Exported Artifacts & Manifest](#exported-artifacts--manifest)
+  - [Running the ML Pipeline Locally](#running-the-ml-pipeline-locally)
+  - [Limitations & Defense-in-Depth Principle](#limitations--defense-in-depth-principle)
 - [Running Automated Tests](#-running-automated-tests)
 - [Security & Defense Controls](#-security--defense-controls)
 - [License](#-license)
@@ -112,6 +121,8 @@ Structured Reports (JSON/CSV) & Prometheus Metrics (/metrics)
 | **Authentication** | Argon2id & PyJWT | Robust password hashing & token rotation |
 | **Cryptography** | Fernet (AES-128-CBC + HMAC) | Secret credential encryption at rest |
 | **NLP & Vectors** | SentenceTransformers & Scikit-learn | Semantic cosine similarity & token metrics |
+| **ML Frameworks** | Scikit-learn, PyTorch, Transformers | TF-IDF + Logistic Regression, DistilBERT, Isolation Forest |
+| **Datasets** | BIPIA (MIT / CC BY-SA 4.0), STS-B | Indirect injection benchmarks & semantic calibration data |
 | **AI Providers** | Groq, Ollama, OpenAI-compatible | Provider abstraction with SSRF protection |
 | **Metrics & Logs** | Prometheus Client & JSON Logger | Real-time monitoring (`/metrics`) & correlation IDs |
 | **Deployment** | Docker & Docker Compose | Multi-stage non-root containerized deployment |
@@ -198,6 +209,20 @@ agentshield-ai/
 │   ├── script.py.mako
 │   └── versions/
 │       └── 001_initial_schema.py    # Complete database schema migration
+│
+├── ml/                              # AgentShield Machine Learning Subsystem
+│   ├── artifacts/                   # Serialized model joblibs & manifest.json (SHA-256)
+│   │   ├── anomaly_detection/       # model.joblib, preprocessing.joblib, config.json
+│   │   └── prompt_injection/        # baseline_tfidf_lr.joblib, config.json
+│   ├── datasets/                    # Datasets (raw/processed git-ignored)
+│   │   └── metadata/                # sources.json, sources_lock.json, split manifests
+│   ├── docs/                        # AUDIT.md, DATASETS.md, MODELS.md
+│   ├── notebooks/                   # AgentShield_ML.ipynb (End-to-End Pipeline)
+│   ├── reports/                     # evaluation/ML_REPORT.md, visualizations/
+│   │   ├── evaluation/              # metrics.json, ML_REPORT.md
+│   │   └── visualizations/          # ROC/PR curves, confusion matrices, distributions
+│   ├── requirements-ml.txt          # Dedicated ML pipeline dependencies
+│   └── README.md                    # ML manual & operating documentation
 │
 ├── tests/                           # Pytest Automated Test Suite (33/33 Passing)
 │   ├── conftest.py                  # Test database fixtures, mock client & users
@@ -714,6 +739,144 @@ Authorization: Bearer <ACCESS_TOKEN>
 | `GET /health` | Liveness probe verifying process is responsive | `{"status": "healthy", "version": "1.0.0"}` |
 | `GET /ready` | Readiness probe verifying database connectivity | `{"status": "ready", "database": "connected"}` |
 | `GET /metrics` | Prometheus metrics endpoint for scraping | Prometheus format metrics |
+
+---
+
+## 🧠 Machine Learning Subsystem (AgentShield ML)
+
+AgentShield AI includes a specialized machine learning pipeline (`ml/`) providing statistical and model-driven security layers to augment deterministic rules. It operates under a strict **defense-in-depth** principle where ML classifiers rank likelihoods and detect anomalies, while deterministic security checks maintain hard boundaries.
+
+### Run Status & Environment
+
+_Latest Benchmark Run: `2026-11-05T12:59:17+00:00` · Seed `42` · Version `0.1.0`_
+* **Runtime**: Python 3.12.3, Linux x86_64, `scikit-learn=1.9.1`, `numpy=2.5.4`, `pandas=3.0.6`
+* **Device**: CPU (Inference / Training)
+
+| Component | State | Description & Reason |
+|---|---|---|
+| `prompt_injection` | **PARTIAL** | Baseline TF-IDF + Logistic Regression trained & evaluated on BIPIA benchmark. |
+| `anomaly_detection` | **PARTIAL** | Isolation Forest pipeline verified on synthetic telemetry anomalies. |
+| `prompt_injection_distilbert` | **SKIPPED** | Deep transformer model skipped in air-gapped / offline environment (requires GPU & Hub access). |
+| `semantic_similarity` | **SKIPPED** | SentenceTransformers pipeline verified in backend via local fallback; STS-B dataset download skipped offline. |
+
+---
+
+### Data Sources & Governance
+
+All dataset revisions and SHA-256 digests are pinned in `ml/datasets/metadata/sources_lock.json`:
+
+| Source | Status | Licence | Revision | Description |
+|---|---|---|---|---|
+| **BIPIA** | `loaded` | MIT / CC BY-SA 4.0 | `a004b69ec0dd` | Benchmark for Indirect Prompt Injection Attacks across text, tables, and code contexts |
+| **deepset_prompt_injections** | `blocked` | Apache 2.0 | — | Direct prompt injection prompts (requires Hub connectivity) |
+| **neuralchemy_prompt_injection** | `blocked` | MIT | — | Synthetic adversarial jailbreak prompts (requires Hub connectivity) |
+| **glue_stsb** | `blocked` | Public / Non-commercial | — | Semantic Textual Similarity Benchmark (requires Hub connectivity) |
+
+> [!NOTE]
+> **Data Governance & Attribution**:
+> Contexts derived from WikiTableQuestions in BIPIA are licensed under **CC BY-SA 4.0** (attribution + share-alike applies). Email contexts originate from OpenAI Evals, and code contexts originate from Stack Exchange. Processed data directories (`ml/datasets/processed/`) are git-ignored by default.
+
+---
+
+### Prompt-Injection Detection Benchmark
+
+The prompt injection classifier is designed to differentiate benign user inputs from indirect prompt injection attempts embedded in emails, tables, and code snippets.
+
+#### Dataset Splitting & Leakage Verification
+* **Splits**: 584 train (292 Safe / 292 Malicious), 148 validation (74 Safe / 74 Malicious), 356 test (178 Safe / 178 Malicious).
+* **De-duplication**: 310 duplicate contexts dropped within split; 11 exact and 18 near-duplicate train-test overlapping contexts removed (`threshold=0.8`).
+* **Leakage Checks**: Exact cross-split overlap = `0`, group leakage = `0`, attack category overlap = `0`.
+
+#### Test Split Evaluation Results (Chosen on Validation Threshold)
+
+| Model | F1 Score | Precision | Recall | False Positive Rate (FPR) | False Negative Rate (FNR) | ROC-AUC | Mean Latency (ms) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **Length-Only Shortcut** | 0.664 | 0.524 | 0.904 | 0.820 | 0.096 | 0.598 | n/a |
+| **TF-IDF + Logistic Regression** | **0.801** | **0.693** | **0.949** | **0.421** | **0.051** | **0.891** | **0.545 ms** |
+| **DistilBERT** | *NOT RUN* | — | — | — | — | — | — |
+
+#### Leave-One-Source-Group-Out Generalization Check
+* **Held-out `bipia_code`**: F1 = 0.667, Recall = 1.000, FPR = 1.000, ROC-AUC = 0.768
+* **Held-out `bipia_text`**: F1 = 0.106, Recall = 0.056, FPR = 0.005, ROC-AUC = 0.746
+
+---
+
+### Telemetry Anomaly Detection Benchmark
+
+An **Isolation Forest** model is trained on multi-dimensional telemetry features (`latency_ms`, `prompt_tokens`, `completion_tokens`, `completion_prompt_ratio`, `tool_call_count`, `unauthorized_tool_count`) with a robust pre-processing pipeline (Impute 0 -> `log1p` transformation -> `RobustScaler`).
+
+* **Validation Performance** (n=900, 25 synthetic anomalies):
+  * **Precision**: `0.941`
+  * **Recall**: `0.640`
+  * **F1 Score**: `0.762`
+  * **False Positive Rate (FPR)**: `0.001`
+  * **ROC-AUC**: `0.950`
+  * **PR-AUC**: `0.808`
+* **Stability**: F1 = `0.780 ± 0.031` across 5 independent refits; Flagged-Set Jaccard index = `0.836`.
+
+#### Scenario-Level Detection Recall
+
+| Injected Telemetry Scenario | Detection Recall | Sample Size (n) |
+|---|---:|---:|
+| **Empty Response** | `1.000` (100%) | 6 |
+| **Prompt Stuffing** | `1.000` (100%) | 2 |
+| **Unauthorized Tool Invocation** | `1.000` (100%) | 4 |
+| **Token Explosion** | `0.667` (66.7%) | 3 |
+| **Tool Storm (Looping)** | `0.667` (66.7%) | 3 |
+| **Latency Spikes** (Mild / High) | `0.000` (0%)* | 7 |
+
+*\*Note: Latency spikes in pooled multi-agent telemetry require per-agent baseline calibration to distinguish naturally slow agents from anomalous spikes.*
+
+---
+
+### Semantic Similarity Pipeline
+
+* **Model**: `sentence-transformers/all-MiniLM-L6-v2`.
+* **Calibration**: STS-B gold standard calibration with cosine similarity thresholding (Backend uses high-speed token Jaccard fallback when network/hub access is restricted).
+
+---
+
+### Exported Artifacts & Manifest
+
+Exported models are stored in `ml/artifacts/` alongside full SHA-256 checksums in `ml/artifacts/manifest.json`:
+
+```
+ml/artifacts/
+├── manifest.json                                # Cryptographic SHA-256 hashes of all artifacts
+├── prompt_injection/
+│   ├── baseline_tfidf_lr.joblib                 # Serialized TF-IDF + LogisticRegression pipeline
+│   └── config.json                              # Thresholds (max_f1, recall_floor) & feature params
+└── anomaly_detection/
+    ├── model.joblib                             # Serialized Isolation Forest estimator
+    ├── preprocessing.joblib                     # Fitted RobustScaler and column transformer
+    └── config.json                              # Feature list, contamination rate & operating points
+```
+
+---
+
+### Running the ML Pipeline Locally
+
+The entire ML lifecycle is self-contained in a single executable Jupyter notebook (`ml/notebooks/AgentShield_ML.ipynb`):
+
+```bash
+# 1. Activate environment and install ML requirements
+pip install -r ml/requirements-ml.txt
+
+# 2. Run the notebook interactively
+jupyter lab ml/notebooks/AgentShield_ML.ipynb
+
+# 3. Or execute headless in batch mode
+jupyter nbconvert --to notebook --execute ml/notebooks/AgentShield_ML.ipynb --inplace
+```
+
+---
+
+### Limitations & Defense-in-Depth Principle
+
+> [!WARNING]
+> 1. **Model Scores are Rankings, Not Absolutes**: Predicted scores reflect rankings against a threshold, not absolute probabilities of malicious intent. ML predictions must always complement, never replace, deterministic security boundaries.
+> 2. **Indirect vs. Direct Injection**: Models trained solely on BIPIA specialize in *indirect* injection in retrieved documents and context windows. Direct jailbreaks and system-prompt extraction are evaluated via the backend's deterministic security engine.
+> 3. **Anomaly Flags**: Isolation Forest identifies *statistical outliers*, not confirmed exploits. Telemetry artifacts are marked `production_ready: false` until calibrated on production telemetry data.
 
 ---
 

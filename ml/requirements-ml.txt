@@ -1,0 +1,19 @@
+# ML notebook dependencies (separate from the backend's requirements.txt on purpose)
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4          # StratifiedGroupKFold
+matplotlib>=3.8
+joblib>=1.3
+nltk>=3.8                  # Punkt sentence spans (BIPIA "middle" insertion); no corpus download needed
+pyarrow>=14                # raw Hub datasets are cached as parquet
+# --- Hugging Face stack (needed for DistilBERT, MiniLM, deepset/neuralchemy, STS-B) ---
+torch>=2.3                 # install the CUDA build matching your driver from pytorch.org if you have an NVIDIA GPU
+transformers>=4.41
+datasets>=2.19
+huggingface_hub>=0.23
+sentence-transformers>=3.0
+# --- optional ---
+sqlalchemy>=2.0            # only to read real telemetry via AGENTSHIELD_DB_URL
+jupyterlab>=4.0
+ipykernel

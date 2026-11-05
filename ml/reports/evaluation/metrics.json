@@ -1,0 +1,665 @@
+{
+  "status": {
+    "prompt_injection_distilbert": {
+      "state": "SKIPPED",
+      "reason": "missing: torch, transformers, Hub access"
+    },
+    "semantic_similarity": {
+      "state": "SKIPPED",
+      "reason": "missing: sentence-transformers, Hub access, STS-B data"
+    },
+    "anomaly_detection": {
+      "state": "PARTIAL",
+      "reason": "trained and evaluated on SYNTHETIC telemetry only (no real telemetry exists yet)"
+    },
+    "prompt_injection": {
+      "state": "PARTIAL",
+      "reason": "baseline only; trained/evaluated on BIPIA only (stand-alone prompt datasets and DistilBERT unavailable in this run)"
+    }
+  },
+  "blockers": [
+    "[data:deepset_prompt_injections] blocked: huggingface.co not reachable from this environment",
+    "[data:neuralchemy_prompt_injection] blocked: huggingface.co not reachable from this environment",
+    "[data:glue_stsb] blocked: huggingface.co not reachable from this environment",
+    "[prompt_injection_distilbert] SKIPPED: missing: torch, transformers, Hub access",
+    "[semantic_similarity] SKIPPED: missing: sentence-transformers, Hub access, STS-B data",
+    "[anomaly_detection] PARTIAL: trained and evaluated on SYNTHETIC telemetry only (no real telemetry exists yet)",
+    "[prompt_injection] PARTIAL: baseline only; trained/evaluated on BIPIA only (stand-alone prompt datasets and DistilBERT unavailable in this run)"
+  ],
+  "results": {
+    "anomaly_detection": {
+      "data_origin": "synthetic",
+      "tuning": {
+        "grid_size": 36,
+        "selected": {
+          "n_estimators": 100,
+          "max_samples": 0.5,
+          "contamination": 0.02
+        },
+        "selection_rule": "max validation F1, ties -> lower FPR",
+        "note": "labels are used ONLY to choose hyper-parameters on the validation split; fit() is unsupervised"
+      },
+      "test": {
+        "precision": 0.9411764705882353,
+        "recall": 0.64,
+        "f1": 0.7619047619047619,
+        "fpr": 0.001142857142857143,
+        "tp": 16,
+        "fp": 1,
+        "tn": 874,
+        "fn": 9,
+        "roc_auc": 0.9504,
+        "pr_auc": 0.8076956624411787,
+        "n": 900,
+        "n_anomalies": 25
+      },
+      "val": {
+        "precision": 0.9375,
+        "recall": 0.5769230769230769,
+        "f1": 0.7142857142857143,
+        "fpr": 0.0011441647597254005,
+        "tp": 15,
+        "fp": 1,
+        "tn": 873,
+        "fn": 11
+      },
+      "test_recall_by_scenario": [
+        {
+          "scenario": "empty_response",
+          "recall": 1.0,
+          "n": 6
+        },
+        {
+          "scenario": "high_latency",
+          "recall": 0.0,
+          "n": 3
+        },
+        {
+          "scenario": "mild_latency",
+          "recall": 0.0,
+          "n": 4
+        },
+        {
+          "scenario": "prompt_stuffing",
+          "recall": 1.0,
+          "n": 2
+        },
+        {
+          "scenario": "token_explosion",
+          "recall": 0.6666666666666666,
+          "n": 3
+        },
+        {
+          "scenario": "tool_storm",
+          "recall": 0.6666666666666666,
+          "n": 3
+        },
+        {
+          "scenario": "unauthorized_tool",
+          "recall": 1.0,
+          "n": 4
+        }
+      ],
+      "stability": {
+        "f1_mean": 0.7798688133571854,
+        "f1_std": 0.031238297106162598,
+        "flagged_set_jaccard_mean": 0.8356725146198831,
+        "n_refits": 5
+      }
+    },
+    "prompt_injection": {
+      "models": {
+        "tfidf_lr": {
+          "config": {
+            "vectorizer": "word 1-2gram, min_df=2, sublinear_tf, max_features=200k",
+            "C": 100.0,
+            "class_weight": "balanced",
+            "threshold_strategy": "max_f1"
+          },
+          "threshold": 0.14150592293851602,
+          "fit_seconds": 0.38429999351501465,
+          "val": {
+            "n": 148,
+            "threshold": 0.14150592293851602,
+            "accuracy": 0.8648648648648649,
+            "precision": 0.813953488372093,
+            "recall": 0.9459459459459459,
+            "f1": 0.875,
+            "fpr": 0.21621621621621623,
+            "fnr": 0.05405405405405406,
+            "tp": 70,
+            "fp": 16,
+            "tn": 58,
+            "fn": 4,
+            "roc_auc": 0.9342585829072316,
+            "pr_auc": 0.9214382984266026
+          },
+          "test": {
+            "n": 356,
+            "threshold": 0.14150592293851602,
+            "accuracy": 0.7640449438202247,
+            "precision": 0.6926229508196722,
+            "recall": 0.949438202247191,
+            "f1": 0.8009478672985783,
+            "fpr": 0.42134831460674155,
+            "fnr": 0.05056179775280899,
+            "tp": 169,
+            "fp": 75,
+            "tn": 103,
+            "fn": 9,
+            "roc_auc": 0.8912384799899002,
+            "pr_auc": 0.8961871165738209
+          },
+          "latency": {
+            "mean_ms": 0.6485994600001987,
+            "p50_ms": 0.6109420000015575,
+            "p95_ms": 0.7829226000069408,
+            "n_calls": 200
+          },
+          "test_by_source": [
+            {
+              "source": "bipia",
+              "n": 356,
+              "n_malicious": 178,
+              "recall": 0.949438202247191,
+              "fpr": 0.42134831460674155
+            }
+          ],
+          "test_by_task": [
+            {
+              "task": "code",
+              "n": 100,
+              "n_malicious": 50,
+              "recall": 1.0,
+              "fpr": 0.8
+            },
+            {
+              "task": "email",
+              "n": 88,
+              "n_malicious": 44,
+              "recall": 0.9545454545454546,
+              "fpr": 0.4772727272727273
+            },
+            {
+              "task": "table",
+              "n": 168,
+              "n_malicious": 84,
+              "recall": 0.9166666666666666,
+              "fpr": 0.16666666666666666
+            }
+          ],
+          "operating_points": [
+            {
+              "strategy": "max_f1",
+              "threshold": 0.14150592293851602,
+              "val_recall": 0.9459459459459459,
+              "val_fpr": 0.21621621621621623,
+              "test_recall": 0.949438202247191,
+              "test_fpr": 0.42134831460674155,
+              "test_f1": 0.8009478672985783
+            },
+            {
+              "strategy": "recall_floor",
+              "threshold": 0.11600404183877071,
+              "val_recall": 0.9594594594594594,
+              "val_fpr": 0.25675675675675674,
+              "test_recall": 0.9662921348314607,
+              "test_fpr": 0.47752808988764045,
+              "test_f1": 0.7908045977011494
+            }
+          ],
+          "test_recall_by_attack_category": [
+            {
+              "attack_category": "text:Conversational Agent",
+              "recall": 0.5555555555555556,
+              "n": 9
+            },
+            {
+              "attack_category": "text:Sentiment Analysis",
+              "recall": 0.7857142857142857,
+              "n": 14
+            },
+            {
+              "attack_category": "text:Reverse Text",
+              "recall": 0.8333333333333334,
+              "n": 6
+            },
+            {
+              "attack_category": "text:Base Encoding",
+              "recall": 0.9090909090909091,
+              "n": 11
+            },
+            {
+              "attack_category": "code:Data Eavesdropping",
+              "recall": 1.0,
+              "n": 3
+            },
+            {
+              "attack_category": "code:Encrypting Documents and Demanding Ransom (Ransomware)",
+              "recall": 1.0,
+              "n": 1
+            },
+            {
+              "attack_category": "code:Blocking Internet Connection",
+              "recall": 1.0,
+              "n": 5
+            },
+            {
+              "attack_category": "code:Bringing Down Hosts and Servers (Denial of Service)",
+              "recall": 1.0,
+              "n": 11
+            },
+            {
+              "attack_category": "code:Keylogging",
+              "recall": 1.0,
+              "n": 5
+            },
+            {
+              "attack_category": "code:Introduce System Fingerprinting",
+              "recall": 1.0,
+              "n": 3
+            },
+            {
+              "attack_category": "code:Traffic Analysis",
+              "recall": 1.0,
+              "n": 6
+            },
+            {
+              "attack_category": "code:Screen Scraping",
+              "recall": 1.0,
+              "n": 11
+            },
+            {
+              "attack_category": "text:Business Intelligence",
+              "recall": 1.0,
+              "n": 9
+            },
+            {
+              "attack_category": "text:Emoji Substitution",
+              "recall": 1.0,
+              "n": 5
+            },
+            {
+              "attack_category": "code:Compromising Computers",
+              "recall": 1.0,
+              "n": 3
+            },
+            {
+              "attack_category": "code:Corrupting an Operating System",
+              "recall": 1.0,
+              "n": 2
+            },
+            {
+              "attack_category": "text:Information Dissemination",
+              "recall": 1.0,
+              "n": 11
+            },
+            {
+              "attack_category": "text:Entertainment",
+              "recall": 1.0,
+              "n": 14
+            },
+            {
+              "attack_category": "text:Language Translation",
+              "recall": 1.0,
+              "n": 7
+            },
+            {
+              "attack_category": "text:Marketing & Advertising",
+              "recall": 1.0,
+              "n": 9
+            },
+            {
+              "attack_category": "text:Research Assistance",
+              "recall": 1.0,
+              "n": 8
+            },
+            {
+              "attack_category": "text:Misinformation & Propaganda",
+              "recall": 1.0,
+              "n": 8
+            },
+            {
+              "attack_category": "text:Scams & Fraud",
+              "recall": 1.0,
+              "n": 3
+            },
+            {
+              "attack_category": "text:Substitution Ciphers",
+              "recall": 1.0,
+              "n": 6
+            },
+            {
+              "attack_category": "text:Task Automation",
+              "recall": 1.0,
+              "n": 8
+            }
+          ],
+          "test_recall_by_position": [
+            {
+              "attack_position": "end",
+              "recall": 0.95,
+              "n": 60
+            },
+            {
+              "attack_position": "middle",
+              "recall": 0.9705882352941176,
+              "n": 68
+            },
+            {
+              "attack_position": "start",
+              "recall": 0.92,
+              "n": 50
+            }
+          ]
+        },
+        "length_only_shortcut": {
+          "threshold": 0.4067587062332923,
+          "val": {
+            "n": 148,
+            "threshold": 0.4067587062332923,
+            "accuracy": 0.527027027027027,
+            "precision": 0.5138888888888888,
+            "recall": 1.0,
+            "f1": 0.6788990825688074,
+            "fpr": 0.9459459459459459,
+            "fnr": 0.0,
+            "tp": 74,
+            "fp": 70,
+            "tn": 4,
+            "fn": 0,
+            "roc_auc": 0.6058254200146092,
+            "pr_auc": 0.5915996206726432
+          },
+          "test": {
+            "n": 356,
+            "threshold": 0.4067587062332923,
+            "accuracy": 0.5421348314606742,
+            "precision": 0.5244299674267101,
+            "recall": 0.9044943820224719,
+            "f1": 0.6639175257731958,
+            "fpr": 0.8202247191011236,
+            "fnr": 0.09550561797752809,
+            "tp": 161,
+            "fp": 146,
+            "tn": 32,
+            "fn": 17,
+            "roc_auc": 0.5975097841181669,
+            "pr_auc": 0.5834184071675397
+          }
+        }
+      },
+      "loso_tfidf_lr": [
+        {
+          "held_out": "bipia_code",
+          "train_groups": [
+            "bipia_text"
+          ],
+          "n_heldout": 200,
+          "accuracy": 0.5,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6666666666666666,
+          "fpr": 1.0,
+          "fnr": 0.0,
+          "roc_auc": 0.768
+        },
+        {
+          "held_out": "bipia_text",
+          "train_groups": [
+            "bipia_code"
+          ],
+          "n_heldout": 888,
+          "accuracy": 0.5259009009009009,
+          "precision": 0.9259259259259259,
+          "recall": 0.05630630630630631,
+          "f1": 0.10615711252653928,
+          "fpr": 0.0045045045045045045,
+          "fnr": 0.9436936936936937,
+          "roc_auc": 0.746160011362714
+        }
+      ],
+      "selected": "tfidf_lr"
+    }
+  },
+  "sources": [
+    {
+      "source_key": "bipia",
+      "name": "BIPIA (microsoft/BIPIA)",
+      "url": "https://github.com/microsoft/BIPIA",
+      "revision": "a004b69ec0dd446e0afd461d98cb5e96e120a5d0",
+      "role": "prompt_injection",
+      "status": "loaded",
+      "acquisition": "downloaded",
+      "license": "MIT",
+      "license_verified_from": "LICENSE file in repo",
+      "third_party_notices": [
+        "WikiTableQuestions (table task contexts): CC BY-SA 4.0 \u2014 attribution + share-alike apply to derived data"
+      ],
+      "unverified_notes": [
+        "Email contexts come from OpenAI Evals and code contexts from Stack Exchange per the BIPIA README; their licences are NOT stated in the repo and were not verified here \u2014 confirm before redistributing any dataset derived from BIPIA."
+      ],
+      "excluded_tasks": [
+        "qa (needs NewsQA)",
+        "abstract (needs XSum)"
+      ],
+      "license_allowed": true,
+      "access_date_utc": "2026-11-05T13:20:15+00:00"
+    },
+    {
+      "source_key": "deepset_prompt_injections",
+      "name": "deepset/prompt-injections",
+      "url": "https://huggingface.co/datasets/deepset/prompt-injections",
+      "config": null,
+      "role": "prompt_injection",
+      "access_date_utc": "2026-11-05T13:20:15+00:00",
+      "status": "blocked",
+      "reason": "huggingface.co not reachable from this environment",
+      "license_allowed": false
+    },
+    {
+      "source_key": "neuralchemy_prompt_injection",
+      "name": "neuralchemy/Prompt-injection-dataset",
+      "url": "https://huggingface.co/datasets/neuralchemy/Prompt-injection-dataset",
+      "config": null,
+      "role": "prompt_injection",
+      "access_date_utc": "2026-11-05T13:20:15+00:00",
+      "status": "blocked",
+      "reason": "huggingface.co not reachable from this environment",
+      "license_allowed": false
+    },
+    {
+      "source_key": "glue_stsb",
+      "name": "nyu-mll/glue",
+      "url": "https://huggingface.co/datasets/nyu-mll/glue",
+      "config": "stsb",
+      "role": "semantic_similarity",
+      "access_date_utc": "2026-11-05T13:20:15+00:00",
+      "status": "blocked",
+      "reason": "huggingface.co not reachable from this environment",
+      "license_allowed": false
+    }
+  ],
+  "cleaning": {
+    "bipia_audit_before_cleaning": {
+      "contexts": [
+        {
+          "task": "code",
+          "train": 50,
+          "test": 50,
+          "duplicate_contexts_within_train": 0,
+          "contexts_in_both_train_and_test": 0,
+          "median_chars": 570,
+          "max_chars": 3669
+        },
+        {
+          "task": "email",
+          "train": 50,
+          "test": 50,
+          "duplicate_contexts_within_train": 5,
+          "contexts_in_both_train_and_test": 11,
+          "median_chars": 432,
+          "max_chars": 3943
+        },
+        {
+          "task": "table",
+          "train": 900,
+          "test": 100,
+          "duplicate_contexts_within_train": 283,
+          "contexts_in_both_train_and_test": 0,
+          "median_chars": 1507,
+          "max_chars": 7021
+        }
+      ],
+      "attacks": [
+        {
+          "attack_kind": "code",
+          "categories_in_both_splits": [],
+          "identical_strings_in_both_splits": 0
+        },
+        {
+          "attack_kind": "text",
+          "categories_in_both_splits": [
+            "Language Translation"
+          ],
+          "identical_strings_in_both_splits": 0
+        }
+      ]
+    },
+    "bipia_cleaning": {
+      "dropped_empty_or_corrupted_contexts": 0,
+      "dropped_duplicate_contexts_within_split": 310,
+      "dropped_train_contexts_also_in_test": 11,
+      "dropped_train_contexts_near_duplicate_of_test": 18,
+      "near_duplicate_threshold": 0.8,
+      "dropped_train_attack_categories_also_in_test": [
+        "text:Language Translation"
+      ]
+    },
+    "leakage_report": {
+      "exact_overlap": {
+        "train&val": 0,
+        "train&test": 0,
+        "val&test": 0
+      },
+      "group_overlap": {
+        "train&val": 0,
+        "train&test": 0,
+        "val&test": 0
+      },
+      "bipia_attack_category_overlap": {
+        "train&val": 0,
+        "train&test": 0,
+        "val&test": 0
+      },
+      "near_duplicate_to_train": {
+        "bipia/test": {
+          "n": 356,
+          "sim>=0.9": 0,
+          "sim>=0.8": 0,
+          "max": 0.769
+        },
+        "bipia/val": {
+          "n": 148,
+          "sim>=0.9": 0,
+          "sim>=0.8": 0,
+          "max": 0.668
+        }
+      }
+    }
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v236-x86_64-with-glibc2.39",
+    "torch": null,
+    "transformers": null,
+    "datasets": "5.1.0",
+    "sentence_transformers": null,
+    "sklearn": "1.9.1",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "device": "cpu",
+    "gpu": null,
+    "amp": false,
+    "huggingface_hub_reachable": false
+  },
+  "config": {
+    "SEED": 42,
+    "MODEL_VERSION": "0.1.0",
+    "BIPIA_REPO": "microsoft/BIPIA",
+    "BIPIA_COMMIT": "a004b69ec0dd446e0afd461d98cb5e96e120a5d0",
+    "BIPIA_TASKS": [
+      "email",
+      "table",
+      "code"
+    ],
+    "BIPIA_MAX_CONTEXTS_PER_TASK_SPLIT": 300,
+    "BIPIA_CROP_CHARS": 500,
+    "BIPIA_VAL_CONTEXT_FRAC": 0.2,
+    "BIPIA_VAL_CATEGORY_FRAC": 0.2,
+    "BIPIA_CTX_NEAR_DUP_THRESHOLD": 0.8,
+    "HF_PROMPT_SOURCES": {
+      "deepset_prompt_injections": {
+        "repo": "deepset/prompt-injections",
+        "config": null
+      },
+      "neuralchemy_prompt_injection": {
+        "repo": "neuralchemy/Prompt-injection-dataset",
+        "config": null
+      }
+    },
+    "HF_STSB": {
+      "repo": "nyu-mll/glue",
+      "config": "stsb"
+    },
+    "HF_MINILM": "sentence-transformers/all-MiniLM-L6-v2",
+    "HF_DISTILBERT": "distilbert-base-uncased",
+    "LICENSE_ALLOWLIST": [
+      "mit",
+      "apache-2.0",
+      "bsd-3-clause",
+      "bsd-2-clause",
+      "cc0-1.0",
+      "cc-by-4.0",
+      "cc-by-3.0",
+      "cc-by-sa-4.0",
+      "cc-by-sa-3.0",
+      "odc-by",
+      "cdla-permissive-2.0"
+    ],
+    "ALLOW_UNVERIFIED_LICENSE": false,
+    "NEAR_DUP_THRESHOLD": 0.9,
+    "SPLIT_FRACTIONS": {
+      "train": 0.7142857142857143,
+      "val": 0.14285714285714285,
+      "test": 0.14285714285714285
+    },
+    "PI_THRESHOLD_STRATEGY": "max_f1",
+    "PI_RECALL_FLOOR": 0.95,
+    "PI_LR_C_GRID": [
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ],
+    "PI_DISTILBERT": {
+      "max_len": 384,
+      "epochs": 3,
+      "lr": 2e-05,
+      "weight_decay": 0.01,
+      "warmup_ratio": 0.1,
+      "batch_gpu": 16,
+      "batch_cpu": 8,
+      "grad_clip": 1.0,
+      "use_class_weights": true,
+      "resume": true,
+      "max_cpu_train_samples": 2000
+    },
+    "STS_POSITIVE_GOLD_CUTOFF": 4.0,
+    "STS_ENCODE_BATCH": 64,
+    "AD_SYNTH_N": 6000,
+    "AD_SYNTH_ANOMALY_RATE": 0.03,
+    "AD_MIN_REAL_ROWS": 500,
+    "AD_DB_ENV_VAR": "AGENTSHIELD_DB_URL"
+  }
+}

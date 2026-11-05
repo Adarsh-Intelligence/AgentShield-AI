@@ -1,0 +1,58 @@
+[
+  {
+    "source_key": "bipia",
+    "name": "BIPIA (microsoft/BIPIA)",
+    "url": "https://github.com/microsoft/BIPIA",
+    "revision": "a004b69ec0dd446e0afd461d98cb5e96e120a5d0",
+    "role": "prompt_injection",
+    "status": "loaded",
+    "acquisition": "downloaded",
+    "license": "MIT",
+    "license_verified_from": "LICENSE file in repo",
+    "third_party_notices": [
+      "WikiTableQuestions (table task contexts): CC BY-SA 4.0 \u2014 attribution + share-alike apply to derived data"
+    ],
+    "unverified_notes": [
+      "Email contexts come from OpenAI Evals and code contexts from Stack Exchange per the BIPIA README; their licences are NOT stated in the repo and were not verified here \u2014 confirm before redistributing any dataset derived from BIPIA."
+    ],
+    "excluded_tasks": [
+      "qa (needs NewsQA)",
+      "abstract (needs XSum)"
+    ],
+    "license_allowed": true,
+    "access_date_utc": "2026-11-05T13:20:15+00:00"
+  },
+  {
+    "source_key": "deepset_prompt_injections",
+    "name": "deepset/prompt-injections",
+    "url": "https://huggingface.co/datasets/deepset/prompt-injections",
+    "config": null,
+    "role": "prompt_injection",
+    "access_date_utc": "2026-11-05T13:20:15+00:00",
+    "status": "blocked",
+    "reason": "huggingface.co not reachable from this environment",
+    "license_allowed": false
+  },
+  {
+    "source_key": "neuralchemy_prompt_injection",
+    "name": "neuralchemy/Prompt-injection-dataset",
+    "url": "https://huggingface.co/datasets/neuralchemy/Prompt-injection-dataset",
+    "config": null,
+    "role": "prompt_injection",
+    "access_date_utc": "2026-11-05T13:20:15+00:00",
+    "status": "blocked",
+    "reason": "huggingface.co not reachable from this environment",
+    "license_allowed": false
+  },
+  {
+    "source_key": "glue_stsb",
+    "name": "nyu-mll/glue",
+    "url": "https://huggingface.co/datasets/nyu-mll/glue",
+    "config": "stsb",
+    "role": "semantic_similarity",
+    "access_date_utc": "2026-11-05T13:20:15+00:00",
+    "status": "blocked",
+    "reason": "huggingface.co not reachable from this environment",
+    "license_allowed": false
+  }
+]

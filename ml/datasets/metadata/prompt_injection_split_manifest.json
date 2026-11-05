@@ -1,0 +1,39 @@
+{
+  "created_utc": "2026-11-05T13:20:17+00:00",
+  "seed": 42,
+  "counts": {
+    "train": {
+      "SAFE": 292,
+      "MALICIOUS": 292
+    },
+    "val": {
+      "SAFE": 74,
+      "MALICIOUS": 74
+    },
+    "test": {
+      "SAFE": 178,
+      "MALICIOUS": 178
+    }
+  },
+  "by_source": {
+    "bipia": {
+      "test": 356,
+      "train": 584,
+      "val": 148
+    }
+  },
+  "proportions": {
+    "train": 0.5368,
+    "test": 0.3272,
+    "val": 0.136
+  },
+  "config": {
+    "BIPIA_COMMIT": "a004b69ec0dd446e0afd461d98cb5e96e120a5d0",
+    "BIPIA_MAX_CONTEXTS_PER_TASK_SPLIT": 300,
+    "BIPIA_CROP_CHARS": 500,
+    "BIPIA_VAL_CONTEXT_FRAC": 0.2,
+    "BIPIA_VAL_CATEGORY_FRAC": 0.2,
+    "NEAR_DUP_THRESHOLD": 0.9
+  },
+  "licence_note": "Derived from BIPIA, which incorporates CC BY-SA 4.0 material (WikiTableQuestions). Do not redistribute without attribution and share-alike review."
+}

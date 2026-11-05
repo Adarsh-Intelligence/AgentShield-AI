@@ -1,0 +1,10 @@
+# Raw and processed data: BIPIA-derived data includes CC BY-SA 4.0 material; Hub data is re-downloadable. Reproduce via the notebook.
+datasets/raw/
+datasets/processed/
+# Large model weights / checkpoints (use Git LFS or external storage if you need to share them)
+artifacts/**/checkpoints/
+artifacts/prompt_injection/model/
+artifacts/prompt_injection/tokenizer/
+artifacts/semantic_similarity/model/
+# Keep small metadata, reports, joblib artifacts and configs
+.ipynb_checkpoints/
