@@ -227,8 +227,8 @@ agentshield-ai/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Adarsh-Intelligence/AgentShield-AI.git
-cd AgentShield-AI
+git clone https://github.com/Adarsh-Intelligence/AgentShield-AI-v1.git
+cd AgentShield-AI-v1
 ```
 
 ### 2. Create and Activate Virtual Environment
