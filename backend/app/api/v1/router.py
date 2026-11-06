@@ -12,6 +12,7 @@ from backend.app.api.v1.endpoints import (
     security,
     test_runs,
     test_suites,
+    ml,
 )
 
 api_router = APIRouter()
@@ -26,4 +27,5 @@ api_router.include_router(prompts.router, tags=["Prompts & Regressions"])
 api_router.include_router(security.router, tags=["Security"])
 api_router.include_router(metrics.router, tags=["Metrics"])
 api_router.include_router(reports.router, tags=["Reports"])
+api_router.include_router(ml.router, tags=["Machine Learning"])
 
